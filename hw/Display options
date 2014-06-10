@@ -1,19 +1,20 @@
-2 lines 16 char LCD
--------------------
-Display 16x2 LCD                    - 1.35€ - http://www.ebay.es/itm/1602-Character-HD44780-LCD-Display-Modul-Anzeigen-2X16-Zeichen-Blau-Rucklicht-HE-/370999887011?pt=Componenti_elettronici_attivi&hash=item56615104a3&_uhb=1
-Serial/I2C Display controller       - 1.18€ - http://www.ebay.es/itm/1602LCD-Display-IIC-I2C-TWI-SP-I-Serial-Interface-Board-Module-Port-T1K-/380746974499?pt=LH_DefaultDomain_2&hash=item58a649c523&_uhb=1
-
+2 lines 16 char LCD + 5 button keypad
+-------------------------------------
 Display 16x2 + keypad shield        - 3.64€ - http://www.ebay.es/itm/1602-LCD-Board-Keypad-Shield-Blue-Backlight-For-Arduino-LCD-Duemilanove-Robot-/161330938876?pt=LH_DefaultDomain_0&hash=item259012c3fc&_uhb=1
 
+2 lines 16 char LCD (less I/O req.)
+------------------------------------
+Display 16x2 LCD                    - 1.35€ - http://www.ebay.es/itm/1602-Character-HD44780-LCD-Display-Modul-Anzeigen-2X16-Zeichen-Blau-Rucklicht-HE-/370999887011?pt=Componenti_elettronici_attivi&hash=item56615104a3&_uhb=1
+Serial/I2C Display controller       - 1.18€ - http://www.ebay.es/itm/1602LCD-Display-IIC-I2C-TWI-SP-I-Serial-Interface-Board-Module-Port-T1K-/380746974499?pt=LH_DefaultDomain_2&hash=item58a649c523&_uhb=1
 
 4 lines 20 char LCD
 -------------------
 Display 20x4 Blue                   - 4.53€ - http://www.ebay.es/itm/2004-20x4-2004A-Character-LCD-Display-Module-Blue-Blacklight-/281317730016?pt=LH_DefaultDomain_0&hash=item417fd7e6e0&_uhb=1
 
-
 128x64 dot matrix LCD
 ---------------------
 Display 128x64 Blue                 - 6.31€ - http://www.ebay.es/itm/5V-12864-LCD-Display-Module-128x64-Dots-Graphic-Matrix-LCD-Blue-Backlight-/121346784806?pt=LH_DefaultDomain_0&hash=item1c40d4fe26&_uhb=1
+Serial/I2C 128x64 Display adapter   - 7.34€ - http://www.ebay.es/itm/Universal-Serial-UART-IIC-I2C-SPI-128x64-LCD-Adapter-Arduino-Lib-7-Fonts-Graphic-/370837649608?pt=LH_DefaultDomain_0&hash=item5657a578c8&_uhb=1 
 
 
 192x64 dot matrix LCD
