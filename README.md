@@ -11,12 +11,11 @@ This is the list of desired requeriments that will be implemented:
 - Secondary battery voltaga adquisition vía isolated channel.
 - Primary current adquisition by shunt or hall effect current sensors.
 - Secondary current input adquisition and RMS calculations (by software or dedicated hardware).
-- Automatic primary and secondary battery swap using latching relays.
-- Primary output mAh totalizer.
-- Secondary input mAh totalizer.
+- 4 bistable relay automatic swap for primary and secondary battery.
+- Input mAh totalizer.
+- Output mAh totalizer.
 - Ratiometric magnetic sensor adquisition.
 - Tachometer function.
-- Magnetometer function.
 - N-Channel Mosfet drive.
 - Pulse delay control by potentiometer.
 - Pulse width control by potentiometer.
