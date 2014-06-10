@@ -25,6 +25,15 @@ This is the list of desired requeriments that will be implemented:
 
 This project is open to anyone experienced with Bedini monopole devices and Arduino platform to help us develop all these requeriments.
 
+Thanks to all people following GTEL google forum:
+	https://groups.google.com/forum/?fromgroups=#!forum/gtenergialibre
+
+Please report test parameters and results filling this form:
+	https://docs.google.com/forms/d/1n88sjHUVd1XVq7qw-Yk2axGrOM51WtBVbFACXNNsZiA/viewform?usp=send_form
+
+All collected data is checkable in this database file:
+	https://docs.google.com/spreadsheet/ccc?key=0Ate9Uk3pKrx4dDJTNzhkczQ0WlN2TTNBSlpvTFhqYmc&usp=sharing
+
 Thank you and best regards.
 
 J.A.Peral.
