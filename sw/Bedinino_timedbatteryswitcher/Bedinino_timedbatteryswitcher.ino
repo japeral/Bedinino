@@ -2,9 +2,11 @@
 //
 // Bedinidno
 //
-// 
+// You need:
+//  - Arduino UNO.
+//  - 4x Latching relay SPDT 8A 5V. Ebay: http://www.ebay.es/itm/171178593872?ssPageName=STRK:MEWNX:IT&_trksid=p3984.m1497.l2649
 //
-// by J.A.Peral 23/jun/2014
+// v1.00, by J.A.Peral 23/jun/2014
 //
 
 #define BATTERIES_SWAP_TIME    300000  // 5 minutes = 5*60*1000 = 300000ms
