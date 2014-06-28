@@ -1,6 +1,6 @@
 
 //
-// Bedinidno
+// Bedinino
 //
 // You need:
 //  - Arduino UNO.
