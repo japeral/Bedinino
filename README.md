@@ -1,7 +1,7 @@
 Bedinino
 ========
 
-Bedinino is an electronic control unit open source Project for Bedini monopole motor/generator systems.
+Bedinino is an electronic control unit open source project for Bedini monopole motor/generator systems.
 
 It is intended for improve system COP (Coefficient Of Performance), and help other people as a platform for start researching this Free Energy devices.
 
