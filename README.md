@@ -7,21 +7,22 @@ It is intended for improve system COP (Coefficient Of Performance), and help oth
 
 This is the list of desired requeriments that will be implemented:
 
-- Primary battery voltage adquisition.
-- Secondary battery voltaga adquisition vía isolated channel.
-- Primary current adquisition by shunt or hall effect current sensors.
-- Secondary current input adquisition and RMS calculations (by software or dedicated hardware).
-- 4 bistable relay automatic swap for primary and secondary battery.
-- Input mAh totalizer.
-- Output mAh totalizer.
-- Ratiometric magnetic sensor adquisition.
-- Tachometer function.
-- N-Channel Mosfet drive.
-- Pulse delay control by potentiometer.
-- Pulse width control by potentiometer.
-- Instantaneous COP calculation.
-- Automatic Sweet point search algorithm.
-- Serialized data output to PC for logging and data plotting in Matlab or LowView.
+- Primary battery voltage adquisition. (DONE)
+- Secondary battery voltaga adquisition. (DONE)
+- Primary current adquisition by hall effect current sensors (DONE) and Resistors (DO TO).
+- 4 bistable relay automatic swap for primary and secondary battery (DONE)
+- Instantáneos sweet point indicator in magnets per minute / input mA form Primary. (TO DO).
+- Secondary current input adquisition and RMS calculations (by software or dedicated AD736 chip). (TO DO)
+- Input mAh totalizer. (TO DO)
+- Output mAh totalizer. (TO DO)
+- Ratiometric magnetic sensor adquisition.(TO DO)
+- Tachometer function. (TO DO)
+- N-Channel Mosfet drive like Adams motor. (TO DO)
+- Pulse delay control by potentiometer.(TO DO)
+- Pulse width control by potentiometer. (TO DO)
+- Instantaneous COP calculation. (TO DO)
+- Automatic Sweet point search algorithm. (TO DO)
+- Serialized data output to PC for logging and data plotting in Matlab or LowView.(TO DO)
 
 This project is open to anyone experienced with Bedini monopole devices and Arduino platform to help us develop all these requeriments.
 
