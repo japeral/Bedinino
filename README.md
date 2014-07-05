@@ -41,4 +41,6 @@ All collected data is checkable in this database file:
 
 Thank you and best regards.
 
-J.A.Peral.
+
+by J.A.Peral
+Bitcoin donations accepted: 18hzkF2NgSPJAuPmpm9ZvVHRnnMsQypm5Z
