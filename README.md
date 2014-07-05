@@ -7,7 +7,10 @@ It is intended for improve system COP (Coefficient Of Performance), and help oth
 
 This is the list of desired requeriments that will be implemented:
 
-- 4 bistable relay automatic swap for primary and secondary battery timed (DONE) and by voltages level (DONE).
+- Automatic primary and secondary batteries swap based on 4 bistable relay.
+ 	* Swap event by:
+ 	 	> Fixed time, 5 minutes by default (DONE).
+ 		> Primary and Secondary voltage level, Primary 11.50V and Secondary 13.00V by default (DONE).
 - Primary battery voltage adquisition. (DONE)
 - Secondary battery voltaga adquisition. (DONE)
 - Primary current adquisition by hall effect current sensors (DONE) and Resistors (DO TO).
