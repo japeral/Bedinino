@@ -6,25 +6,6 @@
 // It is intended for improve system COP (Coefficient Of Performance), and help other 
 // people as a platform for start researching this Free Energy devices.
 //
-// This is the list of desired requeriments that will be implemented:
-// 
-// (DONE)  4 bistable relay automatic swap for primary and secondary battery, with countdown timer.
-// (DONE)  4 lines, 20 character LCD information display.
-// (TO DO) Primary battery voltage adquisition.
-// (TO DO) Secondary battery voltaga adquisition vía isolated channel.
-// (TO DO) Primary current adquisition by shunt or hall effect current sensors.
-// (TO DO) Secondary current input adquisition and RMS calculations (by software or dedicated hardware).
-// (TO DO) Input mAh totalizer.
-// (TO DO) Output mAh totalizer.
-// (TO DO) Ratiometric magnetic sensor adquisition.
-// (TO DO) Tachometer function.
-// (TO DO) N-Channel Mosfet drive.
-// (TO DO) Pulse delay control by potentiometer.
-// (TO DO) Pulse width control by potentiometer.
-// (TO DO) Instantaneous COP calculation.
-// (TO DO) Automatic Sweet point search algorithm.
-// (TO DO) Selfstarting driving some kind of electric motor.
-// (TO DO) USE_SERIALized data output to PC for logging and data plotting in Matlab or LowView.
 //
 // You need:
 //  - Arduino UNO clone.
@@ -39,12 +20,20 @@
 //    Ebay: "2004 20x4 2004A Character LCD Display Module Blue Blacklight"
 //          http://www.ebay.es/itm/2004-20x4-2004A-Character-LCD-Display-Module-Blue-Blacklight-/281317730016?pt=LH_DefaultDomain_0&hash=item417fd7e6e0&_uhb=1
 //
+//  - 2x 220K 1% 1/4W resistor
+//  - 2x 100K 1% 1/4W resistor
+//
+// To do:
+//                   Add magnetometer function.
+//                   Add instantaneous rotor tachometer RPM function.
+//            
+// v1.20 2014-07-05  Added primary and secondary battery voltage adquisition with Arduino Vcc (Vref+) compensation and voltage dividers attenuation calibration in soft.
+//                   Added primary current draw using ACS712-5A current (hall effect) sensor. (need some improvements to avoid unstable reading).
+//                   Added battery switch event by primary battery low voltage event (11.50V) and secondary battery hi voltage event (13.00).
+//
 // v1.10 2014-06-28  Added 4x20 LCD for information display.
 //                   Added countdown to next battery switch.
-//                   Added magnetometer function.
-//                   Added instantaneous rotor tachometer function.
-//                   Added RPM 10 second tendence indicator (stable, accelerating, decelerating, stopped).
-//                   Added rpm reading hold before battery switch.
+//                   Added status role of each battery on LCD display (primary=P or secondary=S). B1=P B2=S B3=S B4=S.
 //
 // v1.00 2014-06-23  Initial release, basic timed 4 battery switcher.
 //
@@ -65,9 +54,10 @@
 #define BAT4_S_PRIMARY_PIN     9
 
 #define IINPUT_ANALOG          A0      // Allegro ACS712 - 5A bipolar Hall efect current sensor
-#define VPRIMARY_ANALOG        A1      // Resistive voltage divider
-#define VSECONDARY_ANALOG      A2      // Resistive voltage divider
-#define MAGNETIC_ANALOG        A3      // Hall efect magnetic sensor
+#define VPRIMARY_ANALOG        A1      // Resistive voltage divider. Attenuation is 3.2V/V (16V max/ 5Vmax = 3.2V/V), R1 = 220K 1% 1/4w, R2= 100K 1% 1/4w.
+#define VSECONDARY_ANALOG      A2      // Resistive voltage divider. Attenuation is 3.2V/V (16V max/ 5Vmax = 3.2V/V), R1 = 220K 1% 1/4w, R2= 100K 1% 1/4w.
+#define MAGNETIC_ANALOG        A3      // A1302 Ratiometric Linear Hall efect magnetic sensor. Fix sensor to coil. Check Vout>2.5V with N magnetic flux.
+                                       // A4 and A5 are not avaliable because pins are used by I2C (LCD display)
 
 //
 // Bedinino peripherals enable
@@ -309,7 +299,7 @@ void loop(){
   } 
 */
 
-  // Analog/Digital adquisition and averaging tasks
+  // Analog to Digital conversion adquisition and averaging tasks
   if(millis()-adqvcctimer>50){
     adqvcctimer=millis();    
     Vccadq();    
@@ -481,7 +471,7 @@ void loop(){
 // Uncoment and download to proceed with calibration. 
 //#define CALIBRATION_MODE
 //
-// Ideal voltage divider gain is 3.2 (16V max/ 5Vmax = 3.2V/V), R1 = 220K 1% 1/4w, R2= 100K 1% 1/4w.
+// Ideal voltage divider attenuation is 3.2V/V (16V max/ 5Vmax = 3.2V/V), R1 = 220K 1% 1/4w, R2= 100K 1% 1/4w.
     #if not defined CALIBRATION_MODE       // You need a digital multimeter reading Primary (Vp) and secondary (Vs) voltage batteries.
       vpfloat= vpfloat * 12.00 / 3750.00;  // Vp=12.00V (multimeter voltage reading on primary on bat), LCD display line 1 = 3697.19mV
       vsfloat= vsfloat * 12.00 / 3750.00;  // Vs=11.93V (multimeter voltage reading on secondary on bat), LCD display line 2 = 3692.42mV
