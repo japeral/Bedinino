@@ -7,10 +7,10 @@ It is intended for improve system COP (Coefficient Of Performance), and help oth
 
 This is the list of desired requeriments that will be implemented:
 
+- 4 bistable relay automatic swap for primary and secondary battery timed (DONE) and by voltages level (DONE).
 - Primary battery voltage adquisition. (DONE)
 - Secondary battery voltaga adquisition. (DONE)
 - Primary current adquisition by hall effect current sensors (DONE) and Resistors (DO TO).
-- 4 bistable relay automatic swap for primary and secondary battery (DONE)
 - Instantáneos sweet point indicator in magnets per minute / input mA form Primary. (TO DO).
 - Secondary current input adquisition and RMS calculations (by software or dedicated AD736 chip). (TO DO)
 - Input mAh totalizer. (TO DO)
