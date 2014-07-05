@@ -27,17 +27,21 @@
 //                   Add magnetometer function.
 //                   Add instantaneous rotor tachometer RPM function.
 //            
-// v1.20 2014-07-05  Added primary and secondary battery voltage adquisition with Arduino Vcc (Vref+) compensation and voltage dividers attenuation calibration in soft.
-//                   Added primary current draw using ACS712-5A current (hall effect) sensor. (need some improvements to avoid unstable reading).
-//                   Added battery switch event by primary battery low voltage event (11.50V) and secondary battery hi voltage event (13.00).
+// v1.20 2014-07-05  * Added primary and secondary battery voltage adquisition with Arduino Vcc (Vref+) compensation 
+//                     and voltage dividers attenuation calibration in soft.
+//                   * Added primary current draw using ACS712-5A current (hall effect) sensor. (need some improvements
+//                     to avoid unstable reading).
+//                   * Added battery switch event by primary battery low voltage event (11.50V) and secondary battery 
+//                     hi voltage event (13.00V) with at least 10s in each battery as primary.
 //
-// v1.10 2014-06-28  Added 4x20 LCD for information display.
-//                   Added countdown to next battery switch.
-//                   Added status role of each battery on LCD display (primary=P or secondary=S). B1=P B2=S B3=S B4=S.
+// v1.10 2014-06-28  * Added 4x20 LCD for information display.
+//                   * Added countdown to next battery switch.
+//                   * Added status role of each battery on LCD display (primary=P or secondary=S). B1=P B2=S B3=S B4=S.
 //
 // v1.00 2014-06-23  Initial release, basic timed 4 battery switcher.
 //
 // by J.A.Peral
+//
 // Bitcoin donations accepted: 18hzkF2NgSPJAuPmpm9ZvVHRnnMsQypm5Z
 //
 
@@ -57,23 +61,27 @@
 #define VPRIMARY_ANALOG        A1      // Resistive voltage divider. Attenuation is 3.2V/V (16V max/ 5Vmax = 3.2V/V), R1 = 220K 1% 1/4w, R2= 100K 1% 1/4w.
 #define VSECONDARY_ANALOG      A2      // Resistive voltage divider. Attenuation is 3.2V/V (16V max/ 5Vmax = 3.2V/V), R1 = 220K 1% 1/4w, R2= 100K 1% 1/4w.
 #define MAGNETIC_ANALOG        A3      // A1302 Ratiometric Linear Hall efect magnetic sensor. Fix sensor to coil. Check Vout>2.5V with N magnetic flux.
-                                       // A4 and A5 are not avaliable because pins are used by I2C (LCD display)
+                                       // NOTE: A4 and A5 are not avaliable because pins are used by I2C (LCD display)
 
 //
 // Bedinino peripherals enable
 //
-//#define USE_SERIAL                  // Enable USE_SERIAL OUT to PC.
 #define LCD                           // Enable LCD information display.
+//#define USE_SERIAL                  // Enable USE_SERIAL OUT to PC.
 
 //
 // Bedini assembly constants definition
 //
-//#define BATTERIES_SWAP_TIME    300000  // 5 minutes = 5*60*1000 = 300000ms
-//#define BATTERIES_SWAP_TIME    1200000 // 20 minutes = 20*60*1000 = 1200000ms
-#define BATTERIES_SWAP_VOLTAGE   13.00
-#define BATTERIES_STOP_VOLTAGE   11.50
+#define MAGNETS_IN_ROTOR       4       // Set here the number of magnets attached to your rotor, needed to RPM calculations.
 
-#define MAGNETS_IN_ROTOR       4       // Set here the number of magnets attached to your rotor.
+// Leave only one of the folloing  #defines enabled.
+//#define SWAP_BY_FIXED_TIME
+#define SWAP_BY_VOLTAGE_EVENT
+
+#define BATTERIES_SWAP_TIME          300000  // 5 minutes = 5*60*1000 = 300000ms
+//#define BATTERIES_SWAP_TIME        1200000 // 20 minutes = 20*60*1000 = 1200000ms
+#define BATTERIES_HIGH_VOLTAGE_EVENT 13.00
+#define BATTERIES_LOW_VOLTAGE_EVENT  11.50
 
 //=========================================
 // Libraries include
@@ -127,6 +135,7 @@ unsigned long switchtimer=0;
 unsigned long lcdrefresh=0;
 unsigned char batteries_state=PRIMARY_1_SET;
 unsigned long countdowntimer=0;
+unsigned long timefromlastswap=0;
 unsigned long swapsecondscountdown=0;
 char message[22];
 
@@ -134,7 +143,7 @@ char message[22];
   // Analog adquisition with smooth filtering (averaging).
   //
   const int numReadings = 10;       // Number of average samples.
-  unsigned long adqvcctimer=0;     // Sample rate for Internal Vref and Vcc calculation.
+  unsigned long adqvcctimer=0;      // Sample rate for Internal Vref and Vcc calculation.
   unsigned long adqiintimer=0;      // Sample rate for iin
   unsigned long adqvpstimer=0;      // Sample rate for Vp and Vs
   // Arduino Vcc power supply (A/D Vref+).
@@ -206,7 +215,7 @@ void setup(){
       lcd.backlight(); 
       lcd.home();
       lcd.setCursor(2,0);      // Char pos 2, Line 0.
-      strcpy(message, "[Bedinino v1.10]");
+      strcpy(message, "[Bedinino v1.20]");
       lcd.print(message);
       #if defined USE_SERIAL
         Serial.println(message);
@@ -232,14 +241,13 @@ void setup(){
     #endif
      
       delay(2000);      // Delay for welcome message display time & analog channels stabilization before zeros calibration.
-
-/*      
+      
       analogRead(IINPUT_ANALOG);           // Sure SAR A/D Input capacitor charged to channel voltage.
       for (int i=0; i<200; i++){
         iinzero= analogRead(IINPUT_ANALOG);  // Adquire current voltage in output sensor as 0 mA.        
         delay(2);                            // Delay beetween samples.                                        
       }
-*/
+
 //    iinzero=512;
       
     #if defined LCD
@@ -269,7 +277,7 @@ void setup(){
       lcd.print("B4=");                  
     #endif
     
-    // Clean up iinreadings int array.
+    // Clean up average readings int array.
     for (int thisReading = 0; thisReading < numReadings; thisReading++){
       iinreadings[thisReading] = 0; 
       vpreadings[thisReading] = 0; 
@@ -326,20 +334,23 @@ void loop(){
       BatSet(BAT3, SECONDARY);      
       BatSet(BAT4, SECONDARY);
       batteries_state=PRIMARY_1_STAY;
+      timefromlastswap=millis();      
       break;
     case PRIMARY_1_STAY:
-      #if defined BATTERIES_SWAP_TIME
+      #if defined SWAP_BY_FIXED_TIME
       if(millis()-switchtimer>BATTERIES_SWAP_TIME){
       #endif
-      #if defined BATTERIES_SWAP_VOLTAGE      
-      if(millis()>10000 && (vsfloat > BATTERIES_SWAP_VOLTAGE || vpfloat < BATTERIES_STOP_VOLTAGE)){
+      #if defined SWAP_BY_VOLTAGE_EVENT
+      if((millis()-timefromlastswap)>10000 && (vsfloat > BATTERIES_HIGH_VOLTAGE_EVENT || vpfloat < BATTERIES_LOW_VOLTAGE_EVENT)){
       #endif     
         switchtimer=millis();
         batteries_state=PRIMARY_2_SET;
       }
+/*      
       #if defined  BATTERIES_STOP_VOLTAGE
         if (millis()>10000 && vsfloat < BATTERIES_STOP_VOLTAGE)  PrimaryNoneSet();
       #endif        
+*/      
       break;
       
     case PRIMARY_2_SET:
@@ -351,21 +362,24 @@ void loop(){
       BatSet(BAT2, PRIMARY);
       BatSet(BAT3, SECONDARY);
       BatSet(BAT4, SECONDARY);
-      batteries_state=PRIMARY_2_STAY;      
+      batteries_state=PRIMARY_2_STAY;   
+      timefromlastswap=millis();            
       break;
     case PRIMARY_2_STAY:
-      #if defined BATTERIES_SWAP_TIME
+      #if defined SWAP_BY_FIXED_TIME
       if(millis()-switchtimer>BATTERIES_SWAP_TIME){
       #endif
-      #if defined BATTERIES_SWAP_VOLTAGE      
-      if(millis()>10000 && (vsfloat > BATTERIES_SWAP_VOLTAGE || vpfloat < BATTERIES_STOP_VOLTAGE)){
+      #if defined SWAP_BY_VOLTAGE_EVENT
+      if((millis()-timefromlastswap)>10000 && (vsfloat > BATTERIES_HIGH_VOLTAGE_EVENT || vpfloat < BATTERIES_LOW_VOLTAGE_EVENT)){
       #endif     
         switchtimer=millis();
         batteries_state=PRIMARY_3_SET;
       }            
+/*      
       #if defined  BATTERIES_STOP_VOLTAGE
         if (millis()>10000 && vsfloat < BATTERIES_STOP_VOLTAGE)  PrimaryNoneSet();
       #endif       
+*/      
       break;      
       
     case PRIMARY_3_SET:
@@ -378,20 +392,23 @@ void loop(){
       BatSet(BAT3, PRIMARY);
       BatSet(BAT4, SECONDARY);    
       batteries_state=PRIMARY_3_STAY;
+      timefromlastswap=millis();            
       break;
     case PRIMARY_3_STAY:
-      #if defined BATTERIES_SWAP_TIME
+      #if defined SWAP_BY_FIXED_TIME
       if(millis()-switchtimer>BATTERIES_SWAP_TIME){
       #endif
-      #if defined BATTERIES_SWAP_VOLTAGE      
-      if(millis()>10000 && (vsfloat > BATTERIES_SWAP_VOLTAGE || vpfloat < BATTERIES_STOP_VOLTAGE)){
+      #if defined SWAP_BY_VOLTAGE_EVENT
+      if((millis()-timefromlastswap)>10000 && (vsfloat > BATTERIES_HIGH_VOLTAGE_EVENT || vpfloat < BATTERIES_LOW_VOLTAGE_EVENT)){
       #endif     
         switchtimer=millis();
         batteries_state=PRIMARY_4_SET;
       }
+/*      
       #if defined  BATTERIES_STOP_VOLTAGE
         if (millis()>10000 && vsfloat < BATTERIES_STOP_VOLTAGE)  PrimaryNoneSet();
       #endif              
+*/
       break;            
       
     case PRIMARY_4_SET:
@@ -403,21 +420,24 @@ void loop(){
       BatSet(BAT2, SECONDARY);
       BatSet(BAT3, SECONDARY);
       BatSet(BAT4, PRIMARY);
-      batteries_state=PRIMARY_4_STAY;      
+      batteries_state=PRIMARY_4_STAY;  
+      timefromlastswap=millis();            
       break;
     case PRIMARY_4_STAY:
-      #if defined BATTERIES_SWAP_TIME
+      #if defined SWAP_BY_FIXED_TIME
       if(millis()-switchtimer>BATTERIES_SWAP_TIME){
       #endif
-      #if defined BATTERIES_SWAP_VOLTAGE      
-      if(millis()>10000 && (vsfloat > BATTERIES_SWAP_VOLTAGE || vpfloat < BATTERIES_STOP_VOLTAGE)){
+      #if defined SWAP_BY_VOLTAGE_EVENT
+      if((millis()-timefromlastswap)>10000 && (vsfloat > BATTERIES_HIGH_VOLTAGE_EVENT || vpfloat < BATTERIES_LOW_VOLTAGE_EVENT)){
       #endif     
         switchtimer=millis();
         batteries_state=PRIMARY_1_SET;
       }            
+/*      
       #if defined  BATTERIES_STOP_VOLTAGE
         if (millis()>10000 && vsfloat < BATTERIES_STOP_VOLTAGE)  PrimaryNoneSet();
       #endif      
+*/
       break;
   }
   //end switch(batteries_state)
@@ -456,61 +476,66 @@ void loop(){
     #endif      
         
     // Plot on LCD VP & VS
-/*
+    
+/*  // DEPRECATED. NO Vcc (Vref+) compensation neither calibration.
     // Map 10bit ADC 0-1023 counts range to 0-16000mV (16V). Calibrate potentiometer to match reading.
     vpfloat=map(vpaverage ,  0, 1023,  0,   16000);  // Primary voltage counts to mv conversion 
     vpfloat=vpfloat/1000;                            // Convert from mV to V.
     vsfloat=map(vsaverage ,  0, 1023,  0,   16000);  // Secondary voltage counts to mv conversion
     vsfloat=vsfloat/1000;                            // Convert from mV to V.        
 */  
-    // Vp and Vs translation to V with Arduino Vcc (Vref+) compensation. 
+    // NEW.
+    // Vp and Vs translation from averaged 10-bit counts to mV (with Arduino Vcc (Vref+) compensation).
     mvpercountfloat = vccfloat / 1024;
     vpfloat= (float)vpaverage * mvpercountfloat;
     vsfloat= (float)vsaverage * mvpercountfloat;
-
-// Uncoment and download to proceed with calibration. 
+// Uncoment and download to proceed with voltage divider calibration.
 //#define CALIBRATION_MODE
-//
 // Ideal voltage divider attenuation is 3.2V/V (16V max/ 5Vmax = 3.2V/V), R1 = 220K 1% 1/4w, R2= 100K 1% 1/4w.
-    #if not defined CALIBRATION_MODE       // You need a digital multimeter reading Primary (Vp) and secondary (Vs) voltage batteries.
-      vpfloat= vpfloat * 12.00 / 3750.00;  // Vp=12.00V (multimeter voltage reading on primary on bat), LCD display line 1 = 3697.19mV
-      vsfloat= vsfloat * 12.00 / 3750.00;  // Vs=11.93V (multimeter voltage reading on secondary on bat), LCD display line 2 = 3692.42mV
+    #if not defined CALIBRATION_MODE       // You need a digital multimeter reading Primary (Vp) and secondary (Vs) voltage batteries to proceed calibration.
+      vpfloat= vpfloat * 12.00 / 3750.00;  // Replace 12.00 with multimeter voltage reading on primary bat. Replace 37500.00 with LCD second line reading.
+      vsfloat= vsfloat * 12.00 / 3750.00;  // Replace 12.00 with multimeter voltage reading on recondary bat. Replace 37500.00 with LCD third line reading.
     #endif
-      
+
+    static unsigned long blink_on_event=0;    
+    static unsigned char event_message=0;
+    if(millis()-blink_on_event>500){
+      blink_on_event=millis();
+      event_message^=1; // toggle value 0->1, 1->0.
+    }
     lcd.setCursor(0,0);
     dtostrf(vpfloat,5,2,message); //
-    #if defined BATTERIES_STOP_VOLTAGE
-    if(vpfloat < BATTERIES_STOP_VOLTAGE)
-      strcpy(message, "STOP");
-    #endif     
-    lcd.print(message);
-      
+    if(vpfloat < BATTERIES_LOW_VOLTAGE_EVENT && event_message){
+      strcpy(message, " LOW ");
+    }
+    if(vpfloat > BATTERIES_HIGH_VOLTAGE_EVENT && event_message){
+      strcpy(message, "HIGH ");
+    }
+    lcd.print(message);     
     lcd.setCursor(0,1);
     dtostrf(vsfloat,5,2,message); //      
-    #if defined BATTERIES_STOP_VOLTAGE
-    if(vsfloat < BATTERIES_STOP_VOLTAGE)
-      strcpy(message, "STOP");
-    #endif      
+    if(vsfloat < BATTERIES_LOW_VOLTAGE_EVENT && event_message){
+      strcpy(message, " LOW ");
+    }
+    if(vsfloat > BATTERIES_HIGH_VOLTAGE_EVENT && event_message){
+      strcpy(message, "HIGH ");
+    }
     lcd.print(message);
   }
   //end if(millis()-lcdrefresh>500)
 
+  #if defined SWAP_BY_FIXED_TIME
   if(millis()-countdowntimer>1000){
     countdowntimer=millis();
     swapsecondscountdown--;    
     lcd.setCursor(15,1);    
     lcd.print("    ");
     lcd.setCursor(15,1);
-    #if defined BATTERIES_SWAP_TIME
     dtostrf(swapsecondscountdown,4,0,message); //
     strcat(message,"s");
     lcd.print(message);    
-    #endif
-    #if defined BATTERIES_SWAP_VOLTAGE
-    lcd.print(BATTERIES_SWAP_VOLTAGE);
-    #endif
-
   }
+  #endif
  
 }
 #endif
@@ -554,7 +579,7 @@ void BatSet(unsigned char battery, unsigned char side){
   digitalWrite(pin, LOW);      
   delay(80);      
 
-#if defined  BATTERIES_SWAP_TIME  
+#if defined  SWAP_BY_FIXED_TIME
   swapsecondscountdown=BATTERIES_SWAP_TIME/1000; // Recharge time to next swap in counter (seconds)
 #endif
 
@@ -662,6 +687,9 @@ long readVcc() {
  
   long result = (high<<8) | low;
  
+//
+//  Adjust literal coeficient to match VCC to your digital multimeter reading voltage btw +5V and GND.
+//
 //  result = 1125300L / result; // Calculate Vcc (in mV); 1.1    *1023*1000
 //  result = 1135530L / result; // Calculate Vcc (in mV); 1.11   *1023*1000
 //  result = 1145760L / result; // Calculate Vcc (in mV); 1.12   *1023*1000  
