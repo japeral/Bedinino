@@ -43,4 +43,6 @@ Thank you and best regards.
 
 
 by J.A.Peral
+
 Bitcoin donations accepted: 18hzkF2NgSPJAuPmpm9ZvVHRnnMsQypm5Z
+
