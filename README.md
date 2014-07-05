@@ -26,6 +26,7 @@ This is the list of desired requeriments that will be implemented:
 - Instantaneous COP calculation. (TO DO)
 - Automatic Sweet point search algorithm. (TO DO)
 - Serialized data output to PC for logging and data plotting in Matlab or LowView.(TO DO)
+- Selfstarting driving some kind of electric DC motor (TO DO).
 
 This project is open to anyone experienced with Bedini monopole devices and Arduino platform to help us develop all these requeriments.
 
