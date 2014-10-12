@@ -9,11 +9,11 @@ This is the list of desired requeriments that will be implemented:
 
 - Automatic primary and secondary batteries swap based on 4 bistable relay.
  	* Swap event by:
- 	 	- Fixed time, 5 minutes by default (DONE).
+ 	 	- Fixed time, 30 seconds by default hardcoded #define (DONE).
  		- Primary and Secondary voltage level, Primary 11.50V and Secondary 13.00V by default (DONE).
 - Primary battery voltage adquisition. (DONE)
 - Secondary battery voltaga adquisition. (DONE)
-- Primary current adquisition by hall effect current sensors (DONE) and Resistors (DO TO).
+- Primary current adquisition by hall effect current sensors and Resistors (DO TO).
 - Instantáneos sweet point indicator in magnets per minute / input mA form Primary. (TO DO).
 - Secondary current input adquisition and RMS calculations (by software or dedicated AD736 chip). (TO DO)
 - Input mAh totalizer. (TO DO)
