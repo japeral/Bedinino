@@ -27,6 +27,9 @@
 //                   Add magnetometer function.
 //                   Add instantaneous rotor tachometer RPM function.
 //            
+// v1.21 2014-07-14  * Added EEPROM backup for nonvolatile batteries machine state.
+//                   * Some improvements to batteies role display on LCD.
+//
 // v1.20 2014-07-05  * Added primary and secondary battery voltage adquisition with Arduino Vcc (Vref+) compensation 
 //                     and voltage dividers attenuation calibration in soft.
 //                   * Added primary current draw using ACS712-5A current (hall effect) sensor. (need some improvements
@@ -67,7 +70,7 @@
 // Bedinino peripherals enable
 //
 #define LCD                           // Enable LCD information display.
-//#define USE_SERIAL                  // Enable USE_SERIAL OUT to PC.
+#define USE_SERIAL                  // Enable USE_SERIAL OUT to PC.
 
 //
 // Bedini assembly constants definition
@@ -80,12 +83,13 @@
 
 #define BATTERIES_SWAP_TIME          300000  // 5 minutes = 5*60*1000 = 300000ms
 //#define BATTERIES_SWAP_TIME        1200000 // 20 minutes = 20*60*1000 = 1200000ms
-#define BATTERIES_HIGH_VOLTAGE_EVENT 13.00
-#define BATTERIES_LOW_VOLTAGE_EVENT  11.50
+#define BATTERIES_HIGH_VOLTAGE_EVENT 14.00
+#define BATTERIES_LOW_VOLTAGE_EVENT  12.00
 
 //=========================================
 // Libraries include
 //
+#include <EEPROM.h>
 
 // 4x20 LCD Display
 #if defined LCD
@@ -131,9 +135,16 @@ typedef struct{
 //=============================================================
 // Global variables
 //
+
+// Non volatile
+struct{
+  unsigned char batteries_state;
+}nv;
+
+// Volatile
+unsigned char old_batteries_state=0xFF;
 unsigned long switchtimer=0;
 unsigned long lcdrefresh=0;
-unsigned char batteries_state=PRIMARY_1_SET;
 unsigned long countdowntimer=0;
 unsigned long timefromlastswap=0;
 unsigned long swapsecondscountdown=0;
@@ -192,8 +203,8 @@ void Vccadq(void);
 // Setup loop
 //
 void setup(){
-    PrimaryNoneSet();
-     
+
+  
     // USE_SERIAL Setup.
     #if defined USE_SERIAL
       Serial.begin(9600);
@@ -215,7 +226,7 @@ void setup(){
       lcd.backlight(); 
       lcd.home();
       lcd.setCursor(2,0);      // Char pos 2, Line 0.
-      strcpy(message, "[Bedinino v1.20]");
+      strcpy(message, "[Bedinino v1.21]");
       lcd.print(message);
       #if defined USE_SERIAL
         Serial.println(message);
@@ -284,6 +295,12 @@ void setup(){
       vsreadings[thisReading] = 0;       
     }
     
+    nv.batteries_state=EEPROM.read(0);   
+    #if defined USE_SERIAL    
+    Serial.print("BatteriesState:");
+    Serial.print(nv.batteries_state);
+    #endif
+    
 }
 //end setup
 
@@ -322,8 +339,8 @@ void loop(){
   }
 
   // Battery switcher state machine.
-  switch(batteries_state){
-    default:    
+  switch(nv.batteries_state){
+    default:                // If uninitialized, default sets PRIMARY_1_SET
     case PRIMARY_1_SET:    
       PrimaryNoneSet();
       #if defined USE_SERIAL
@@ -333,8 +350,8 @@ void loop(){
       BatSet(BAT2, SECONDARY);      
       BatSet(BAT3, SECONDARY);      
       BatSet(BAT4, SECONDARY);
-      batteries_state=PRIMARY_1_STAY;
-      timefromlastswap=millis();      
+      nv.batteries_state=PRIMARY_1_STAY;
+      timefromlastswap=millis();     
       break;
     case PRIMARY_1_STAY:
       #if defined SWAP_BY_FIXED_TIME
@@ -344,7 +361,8 @@ void loop(){
       if((millis()-timefromlastswap)>10000 && (vsfloat > BATTERIES_HIGH_VOLTAGE_EVENT || vpfloat < BATTERIES_LOW_VOLTAGE_EVENT)){
       #endif     
         switchtimer=millis();
-        batteries_state=PRIMARY_2_SET;
+        nv.batteries_state=PRIMARY_2_SET;
+        EEPROM.write(0, nv.batteries_state);
       }
 /*      
       #if defined  BATTERIES_STOP_VOLTAGE
@@ -362,7 +380,7 @@ void loop(){
       BatSet(BAT2, PRIMARY);
       BatSet(BAT3, SECONDARY);
       BatSet(BAT4, SECONDARY);
-      batteries_state=PRIMARY_2_STAY;   
+      nv.batteries_state=PRIMARY_2_STAY;   
       timefromlastswap=millis();            
       break;
     case PRIMARY_2_STAY:
@@ -373,7 +391,8 @@ void loop(){
       if((millis()-timefromlastswap)>10000 && (vsfloat > BATTERIES_HIGH_VOLTAGE_EVENT || vpfloat < BATTERIES_LOW_VOLTAGE_EVENT)){
       #endif     
         switchtimer=millis();
-        batteries_state=PRIMARY_3_SET;
+        nv.batteries_state=PRIMARY_3_SET;
+        EEPROM.write(0, nv.batteries_state);        
       }            
 /*      
       #if defined  BATTERIES_STOP_VOLTAGE
@@ -391,7 +410,7 @@ void loop(){
       BatSet(BAT2, SECONDARY);
       BatSet(BAT3, PRIMARY);
       BatSet(BAT4, SECONDARY);    
-      batteries_state=PRIMARY_3_STAY;
+      nv.batteries_state=PRIMARY_3_STAY;
       timefromlastswap=millis();            
       break;
     case PRIMARY_3_STAY:
@@ -402,7 +421,8 @@ void loop(){
       if((millis()-timefromlastswap)>10000 && (vsfloat > BATTERIES_HIGH_VOLTAGE_EVENT || vpfloat < BATTERIES_LOW_VOLTAGE_EVENT)){
       #endif     
         switchtimer=millis();
-        batteries_state=PRIMARY_4_SET;
+        nv.batteries_state=PRIMARY_4_SET;
+        EEPROM.write(0, nv.batteries_state);        
       }
 /*      
       #if defined  BATTERIES_STOP_VOLTAGE
@@ -420,7 +440,7 @@ void loop(){
       BatSet(BAT2, SECONDARY);
       BatSet(BAT3, SECONDARY);
       BatSet(BAT4, PRIMARY);
-      batteries_state=PRIMARY_4_STAY;  
+      nv.batteries_state=PRIMARY_4_STAY;  
       timefromlastswap=millis();            
       break;
     case PRIMARY_4_STAY:
@@ -431,7 +451,8 @@ void loop(){
       if((millis()-timefromlastswap)>10000 && (vsfloat > BATTERIES_HIGH_VOLTAGE_EVENT || vpfloat < BATTERIES_LOW_VOLTAGE_EVENT)){
       #endif     
         switchtimer=millis();
-        batteries_state=PRIMARY_1_SET;
+        nv.batteries_state=PRIMARY_1_SET;
+        EEPROM.write(0, nv.batteries_state);
       }            
 /*      
       #if defined  BATTERIES_STOP_VOLTAGE
@@ -441,12 +462,48 @@ void loop(){
       break;
   }
   //end switch(batteries_state)
+
+
  
 
   // LCD Refresh
 #if defined LCD
   if(millis()-lcdrefresh>666){
     lcdrefresh=millis();
+
+    // Batteries role display refresh
+    switch(nv.batteries_state){
+    case PRIMARY_1_STAY:  
+      lcd.setCursor(3,2);  lcd.print("P");
+      lcd.setCursor(8,2);  lcd.print("S");
+      lcd.setCursor(13,2); lcd.print("S");
+      lcd.setCursor(18,2); lcd.print("S");      
+      break;
+    case PRIMARY_2_STAY:
+      lcd.setCursor(3,2);  lcd.print("S");
+      lcd.setCursor(8,2);  lcd.print("P");
+      lcd.setCursor(13,2); lcd.print("S");
+      lcd.setCursor(18,2); lcd.print("S");          
+      break;
+    case PRIMARY_3_STAY:
+      lcd.setCursor(3,2);  lcd.print("S");
+      lcd.setCursor(8,2);  lcd.print("S");
+      lcd.setCursor(13,2); lcd.print("P");
+      lcd.setCursor(18,2); lcd.print("S");              
+      break;
+    case PRIMARY_4_STAY:
+      lcd.setCursor(3,2);  lcd.print("S");
+      lcd.setCursor(8,2);  lcd.print("S");
+      lcd.setCursor(13,2); lcd.print("S");
+      lcd.setCursor(18,2); lcd.print("P");              
+      break;
+   default: 
+      lcd.setCursor(3,2);  lcd.print(" ");
+      lcd.setCursor(8,2);  lcd.print(" ");
+      lcd.setCursor(13,2); lcd.print(" ");
+      lcd.setCursor(18,2); lcd.print(" ");    
+      break;
+    }     
 
     lcd.setCursor(0,3);
     lcd.print("Vcc=        ");
@@ -548,19 +605,6 @@ void BatSet(unsigned char battery, unsigned char side){
   
   int pin;
 
-#if defined LCD
-  if (side==PRIMARY){ 
-    if(battery == BAT1){ pin=BAT1_S_PRIMARY_PIN;   lcd.setCursor(3,2);  lcd.print("P"); }
-    if(battery == BAT2){ pin=BAT2_S_PRIMARY_PIN;   lcd.setCursor(8,2);  lcd.print("P"); }
-    if(battery == BAT3){ pin=BAT3_S_PRIMARY_PIN;   lcd.setCursor(13,2); lcd.print("P"); }
-    if(battery == BAT4){ pin=BAT4_S_PRIMARY_PIN;   lcd.setCursor(18,2); lcd.print("P"); }
-  }else{
-    if(battery == BAT1){ pin=BAT1_R_SECONDARY_PIN; lcd.setCursor(3,2);  lcd.print("S"); }
-    if(battery == BAT2){ pin=BAT2_R_SECONDARY_PIN; lcd.setCursor(8,2);  lcd.print("S"); }
-    if(battery == BAT3){ pin=BAT3_R_SECONDARY_PIN; lcd.setCursor(13,2); lcd.print("S"); }
-    if(battery == BAT4){ pin=BAT4_R_SECONDARY_PIN; lcd.setCursor(18,2); lcd.print("S"); }
-  }
-#else
   if (side==PRIMARY){ 
     if(battery == BAT1) pin=BAT1_S_PRIMARY_PIN;
     if(battery == BAT2) pin=BAT2_S_PRIMARY_PIN;
@@ -572,8 +616,6 @@ void BatSet(unsigned char battery, unsigned char side){
     if(battery == BAT3) pin=BAT3_R_SECONDARY_PIN;
     if(battery == BAT4) pin=BAT4_R_SECONDARY_PIN;
   }
-#endif
-
   digitalWrite(pin, HIGH);    
   delay(80);
   digitalWrite(pin, LOW);      
