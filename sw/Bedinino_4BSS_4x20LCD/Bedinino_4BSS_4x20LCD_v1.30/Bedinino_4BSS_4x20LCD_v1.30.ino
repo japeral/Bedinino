@@ -10,14 +10,17 @@
 // You need:
 //  - Arduino UNO clone.
 //    Ebay: "NEW CH340G ATmega328P UNO R3 Board & Free USB Cable for Arduino DIY"
-//          http://www.ebay.es/itm/141248769799?ssPageName=STRK:MEWNX:IT&_trksid=p3984.m1497.l2649
+//        http://www.ebay.es/itm/141248769799 4.76€
 //
 //  - 1x Bedinino B4SS Shield.
+//        http://www.ebay.es/itm/161449558208 17.26€
 //
 //  - 4 Lines, 20 character, LCD with I2C interface board.
 //    Ebay: "2004 20x4 2004A Character LCD Display Module Blue Blacklight"
-//          http://www.ebay.es/itm/2004-20x4-2004A-Character-LCD-Display-Module-Blue-Blacklight-/281317730016?pt=LH_DefaultDomain_0&hash=item417fd7e6e0&_uhb=1
+//        http://www.ebay.es/itm/131282437497 4.46€
 //
+//  - I2C serial interace for 2x16 4x20 LCD
+//        http://www.ebay.es/itm/171450359303 1.26€
 //
 // To do:
 //                   Add magnetometer function.
